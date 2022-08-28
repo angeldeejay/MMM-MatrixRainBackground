@@ -9,7 +9,8 @@
 
 Module.register("MMM-MatrixRainBackground", {
 	defaults: {
-		updateInterval: 60000,
+		header: false,
+		updateInterval: 600000,
 		fontSize: 32,
 		speed: 75,
 	},
@@ -29,13 +30,48 @@ Module.register("MMM-MatrixRainBackground", {
 		'畉', '畊', '畋', '界', '畍',
 		'畎', '畏', '畐', '畑'
 	],
+	readyState: false,
 
 	start: function () {
-		this.updateDom();
+		this.config = { ...this.default, ...this.config };
+		this.loop();
+	},
+
+	loop: function () {
+		var self = this;
+		if (this.readyState) {
+			this.animate();
+			setTimeout(function () {
+				self.clear();
+				self.loop();
+			}, this.config.updateInterval);
+		} else {
+			this.updateDom();
+			setTimeout(function () {
+				self.loop();
+			}, 100);
+		}
+	},
+
+	clear: function () {
+		this.readyState = false;
+		if (this.animationInterval !== null) {
+			clearInterval(this.animationInterval);
+		}
+		this.animationInterval = null;
+		this.context = null;
+		for (const el of ['wrapper', 'canvas']) {
+			if (this[el] !== null) {
+				try { this[el].offsetParent.removeChild(this[el]); } catch (_) { }
+				this[el] = null;
+			}
+		}
+		this.drops = [];
 	},
 
 	initDrops: function () {
-		this.drops = [];
+		this.canvas.height = this.wrapper.offsetHeight;
+		this.canvas.width = this.wrapper.offsetWidth;
 		for (
 			var columns = Math.ceil(this.canvas.width / this.config.fontSize),
 			rows = Math.ceil(this.canvas.height / this.config.fontSize),
@@ -47,42 +83,27 @@ Module.register("MMM-MatrixRainBackground", {
 		}
 	},
 
-	clear: function () {
-		if (this.animationInterval !== null) {
-			clearInterval(this.animationInterval);
-			this.animationInterval = null;
-		}
-		for (var el of ['canvas', 'wrapper']) {
-			if (this[el] !== null) {
-				try { this[el].parentNode.removeChild(this[el]); }
-				catch (_) { ; }
-				finally { this[el] = null; }
-			}
-		}
-		this.context = null;
-		this.initDrops();
-	},
-
 	getDom: function () {
-		this.clear();
+		if (this.wrapper === null) {
+			this.wrapper = document.createElement("div");
+			this.wrapper.classList.add("wrapper");
+		}
 
-		this.wrapper = document.createElement("div");
-		this.wrapper.width = '100%';
-		this.wrapper.height = '100%';
-		this.wrapper.style.position = 'relative';
-		this.wrapper.style.width = '100%';
-		this.wrapper.style.maxWidth = '100%';
-		this.wrapper.style.minWidth = '100%';
-		this.wrapper.style.height = '100%';
-		this.wrapper.style.maxHeight = '100%';
-		this.wrapper.style.minHeight = '100%';
+		if (this.canvas === null) {
+			this.canvas = document.createElement('canvas');
+			this.canvas.id = 'canvas_' + this.identifier;
+			this.canvas.style.width = 0.1;
+			this.canvas.style.height = 0.1;
+			this.wrapper.appendChild(this.canvas);
+		}
 
-		this.canvas = document.createElement('canvas');
-		this.canvas.style.position = 'relative';
-		this.wrapper.appendChild(this.canvas);
-
-		this.context = this.canvas.getContext("2d");
-		this.animate();
+		if (this.wrapper !== null &&
+			this.wrapper.offsetParent !== null &&
+			this.canvas !== null &&
+			this.canvas.offsetParent !== null) {
+			this.context = this.canvas.getContext("2d");
+			this.readyState = true;
+		}
 
 		return this.wrapper;
 	},
@@ -97,24 +118,19 @@ Module.register("MMM-MatrixRainBackground", {
 			var character = this.characters[Math.floor(Math.random() * this.characters.length)];
 			this.context.fillText(character, i * this.config.fontSize, this.drops[i] * this.config.fontSize);
 			this.drops[i]++;
-			if (this.drops[i] * this.config.fontSize > c.height && Math.random() > 0.995) {
+			if (this.drops[i] * this.config.fontSize > this.canvas.height && Math.random() > 0.995) {
 				this.drops[i] = 0;
 			}
 		}
 	},
 
 	animate: function () {
-		if (this.wrapper = null || this.wrapper.offsetParent === null) {
-			setTimeout(() => this.animate, 100);
-			return;
-		}
-		this.canvas.height = this.wrapper.innerHeight;
-		this.canvas.width = this.wrapper.innerWidth;
+		this.initDrops();
 
-		this.animationInterval = setInterval(
-			() => window.requestAnimationFrame(this.draw),
-			this.config.speed
-		);
+		var self = this;
+		this.animationInterval = setInterval(function () {
+			self.draw()
+		}, this.config.speed);
 	},
 
 	getStyles: function () {
