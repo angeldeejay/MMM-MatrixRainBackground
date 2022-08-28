@@ -1,0 +1,8 @@
+{
+  "name": "MMM-MatrixRainBackground",
+  "version": "1.0.0",
+  "description": "MagicMirror module to rain code like The Matrix movie",
+  "main": "MMM-MatrixRainBackground.js",
+  "author": "Andrés Vanegas",
+  "license": "MIT"
+}
