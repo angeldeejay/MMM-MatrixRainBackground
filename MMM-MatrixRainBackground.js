@@ -12,6 +12,7 @@ Module.register("MMM-MatrixRainBackground", {
 		header: false,
 		fontSize: 32,
 		speed: 75,
+		rate: 95.0,
 	},
 
 	requiresVersion: "2.1.0", // Required version of MagicMirror
@@ -58,6 +59,8 @@ Module.register("MMM-MatrixRainBackground", {
 
 	start: function () {
 		this.config = { ...this.default, ...this.config };
+		const __rate = parseFloat(`${this.config.rate}`);
+		this.config.rate = isNaN(__rate) ? this.defaults.rate : __rate;
 		this.loop();
 	},
 
@@ -122,7 +125,7 @@ Module.register("MMM-MatrixRainBackground", {
 			var character = this.characters[Math.floor(Math.random() * this.characters.length)];
 			this.context.fillText(character, i * this.config.fontSize, this.drops[i] * this.config.fontSize);
 			this.drops[i]++;
-			if (this.drops[i] * this.config.fontSize > this.canvas.height && Math.random() > 0.995) {
+			if (this.drops[i] * this.config.fontSize > this.canvas.height && Math.random() > (this.config.rate / 100)) {
 				this.drops[i] = 0;
 			}
 		}
